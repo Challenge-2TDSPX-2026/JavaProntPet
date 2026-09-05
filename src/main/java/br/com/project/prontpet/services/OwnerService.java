@@ -33,13 +33,13 @@ public class OwnerService {
         return ownerRepository.findByEmail(email);
     }
 
-    public LoginResponse login(LoginRequest loginRequest){
+   /*public LoginResponse login(LoginRequest loginRequest){
         Owner owner = ownerRepository.findByEmail(loginRequest.email())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Email or passwor is invalids"));
         if (!loginRequest.password().equals(owner.getPassword())){throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Email or password is invalids");}
         return new LoginResponse(owner.getEmail());
 
-    }
+    }*/
 
 
     public void deleteOwner(Long id){
