@@ -33,6 +33,7 @@ public class AuthController {
         this.authenticationManager = authenticationManager;
         this.accountRepository = accountRepository;
         this.tokenService = tokenService;
+        this.accountService = accountService;
     }
 
     @PostMapping("/login")
@@ -63,7 +64,7 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<AccountResponse> register(
-            @Valid @RequestBody AccountRequest request
+            @RequestBody AccountRequest request
     ) {
         Account account = accountService.addAccount(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(AccountResponse.fromEntity(account));
