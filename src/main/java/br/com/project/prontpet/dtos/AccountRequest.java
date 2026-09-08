@@ -12,7 +12,6 @@ public record AccountRequest(
         @NotBlank(message = "email is required")
         @Email
         String email,
-
         @NotBlank(message = "password is required")
         @Size(min = 6, message = "password must have at least 6 characters")
         String password,

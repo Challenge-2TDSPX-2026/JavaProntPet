@@ -44,16 +44,7 @@ public class OwnerController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PostMapping("/login")
-    @Operation(
-            tags = "Owner",
-            summary = "Login do dono",
-            description = "Recebe as credenciais do dono via body e retorna o token de autenticação em caso de sucesso."
-    )
-//    public ResponseEntity<LoginResponse> loginOwner(@Valid @RequestBody LoginRequest loginRequest) {
-//        LoginResponse logined = ownerService.login(loginRequest);
-//        return ResponseEntity.ok(logined);
-//    }
+
 
     @PostMapping
     @Operation(

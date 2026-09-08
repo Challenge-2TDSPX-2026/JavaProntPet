@@ -38,8 +38,10 @@ public class SecurityConfig {
                             "/auth/login",
                             "/v3/api-docs/**",
                             "/swagger-ui/**",
-                            "/swagger-ui.html")
+                            "/swagger-ui.html",
+                            "/swagger-ui.html/**")
                         .permitAll()
+                    .requestMatchers(HttpMethod.POST, "/swagger-ui/index.html/**").permitAll()
                     .requestMatchers(HttpMethod.POST, "/clinics/**")
                         .hasAuthority("ROLE_ADMIN")
                     .requestMatchers(HttpMethod.DELETE,"/clinics/**")
