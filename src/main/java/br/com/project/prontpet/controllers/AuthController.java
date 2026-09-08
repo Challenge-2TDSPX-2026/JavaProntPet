@@ -1,10 +1,14 @@
 package br.com.project.prontpet.controllers;
 
+import br.com.project.prontpet.dtos.AccountRequest;
+import br.com.project.prontpet.dtos.AccountResponse;
 import br.com.project.prontpet.dtos.LoginRequest;
 import br.com.project.prontpet.dtos.LoginResponse;
 import br.com.project.prontpet.models.Account;
 import br.com.project.prontpet.repositories.AccountRepository;
 import br.com.project.prontpet.security.TokenService;
+import br.com.project.prontpet.services.AccountService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -18,11 +22,13 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final AccountRepository accountRepository;
     private final TokenService tokenService;
+    private final AccountService accountService;
 
     public AuthController(
             AuthenticationManager authenticationManager,
             AccountRepository accountRepository,
-            TokenService tokenService
+            TokenService tokenService,
+            AccountService accountService
     ) {
         this.authenticationManager = authenticationManager;
         this.accountRepository = accountRepository;
@@ -53,5 +59,13 @@ public class AuthController {
         return ResponseEntity.ok(
                 new LoginResponse(token)
         );
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<AccountResponse> register(
+            @Valid @RequestBody AccountRequest request
+    ) {
+        Account account = accountService.addAccount(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(AccountResponse.fromEntity(account));
     }
 }
