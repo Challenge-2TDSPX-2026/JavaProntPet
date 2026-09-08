@@ -30,10 +30,12 @@ public class AccountService {
         if (request.ownerId() != null){
             var owner = ownerRepository.findById(request.ownerId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "owner not found"));
+            account.setOwner(owner);
         }
         if (request.clinicId() != null){
-            var clinicId = clinicRepository.findById(request.clinicId())
+            var clinic = clinicRepository.findById(request.clinicId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "clinic not found"));
+            account.setClinic(clinic);
     }
         return accountRepository.save(account);
     }
