@@ -34,7 +34,7 @@ public class AccountService {
         if (request.clinicId() != null){
             var clinicId = clinicRepository.findById(request.clinicId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "clinic not found"));
-        }
+    }
         return accountRepository.save(account);
     }
 }
