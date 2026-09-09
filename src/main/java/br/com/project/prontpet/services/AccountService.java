@@ -2,6 +2,7 @@ package br.com.project.prontpet.services;
 
 
 import br.com.project.prontpet.dtos.AccountRequest;
+import br.com.project.prontpet.enums.Roles;
 import br.com.project.prontpet.models.Account;
 import br.com.project.prontpet.repositories.AccountRepository;
 import br.com.project.prontpet.repositories.ClinicRepository;
@@ -26,6 +27,10 @@ public class AccountService {
 
         Account account = request.toEntity();
         account.setPassword(passwordEncoder.encode(request.password()));
+
+        if (request.role() == Roles.ROLE_ADMIN){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "you cannot add an administrator");
+        }
 
         if (request.ownerId() != null){
             var owner = ownerRepository.findById(request.ownerId())

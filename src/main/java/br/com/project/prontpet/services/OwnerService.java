@@ -2,9 +2,12 @@ package br.com.project.prontpet.services;
 
 import br.com.project.prontpet.dtos.LoginRequest;
 import br.com.project.prontpet.dtos.LoginResponse;
+import br.com.project.prontpet.enums.Roles;
 import br.com.project.prontpet.models.Owner;
 import br.com.project.prontpet.repositories.OwnerRepository;
+import br.com.project.prontpet.security.AccountUserDetails;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -33,17 +36,18 @@ public class OwnerService {
         return ownerRepository.findByEmail(email);
     }
 
-   /*public LoginResponse login(LoginRequest loginRequest){
-        Owner owner = ownerRepository.findByEmail(loginRequest.())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Email or passwor is invalids"));
-        if (!loginRequest.password().equals(owner.getPassword())){throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Email or password is invalids");}
-        return new LoginResponse(owner.getEmail());
-
-    }*/
-
-
     public void deleteOwner(Long id){
-        var optionalOwner = getOwnerById(id);
+
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        var principal = (AccountUserDetails) authentication.getPrincipal();
+        var account = principal.getAccount();
+
+        boolean isAdmin = account.getRole() == Roles.ROLE_ADMIN;
+        boolean isSameOwner = account.getOwner() != null && account.getOwner().getId().equals(id);
+
+        if (!isAdmin && !isSameOwner) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "you can only edit your own account");
+        }var optionalOwner = getOwnerById(id);
         if (optionalOwner.isEmpty()){
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "user not found");
         }
@@ -51,6 +55,18 @@ public class OwnerService {
     }
 
     public Owner updateOwner(Long id, Owner newOwner){
+
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        var principal = (AccountUserDetails) authentication.getPrincipal();
+        var account = principal.getAccount();
+
+        boolean isAdmin = account.getRole() == Roles.ROLE_ADMIN;
+        boolean isSameOwner = account.getOwner() != null && account.getOwner().getId().equals(id);
+
+        if (!isAdmin && !isSameOwner) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "you can only edit your own account");
+        }
+
         var optionalOwner = getOwnerById(id);
         if (optionalOwner.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "owner not found");
         newOwner.setId(id);
