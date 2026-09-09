@@ -34,7 +34,7 @@ public class OwnerService {
     }
 
    /*public LoginResponse login(LoginRequest loginRequest){
-        Owner owner = ownerRepository.findByEmail(loginRequest.email())
+        Owner owner = ownerRepository.findByEmail(loginRequest.())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Email or passwor is invalids"));
         if (!loginRequest.password().equals(owner.getPassword())){throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Email or password is invalids");}
         return new LoginResponse(owner.getEmail());
