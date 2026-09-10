@@ -65,13 +65,11 @@ public class PetService {
         var principal = (AccountUserDetails) authentication.getPrincipal();
         var account = principal.getAccount();
 
-        boolean isAdmin = account.getRole() == Roles.ROLE_ADMIN;
-        boolean isOwnerOfThisPet = account.getOwner() != null
-                && pet.getOwner().getId().equals(account.getOwner().getId());
-
-        if (!isAdmin && !isOwnerOfThisPet) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "you can only add pets to your own account");
+        if (account.getOwner() == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "only a tutor account can register a pet");
         }
+
+        pet.setOwner(account.getOwner());
 
         return petRepository.save(pet);
     }
@@ -101,7 +99,6 @@ public class PetService {
     @CacheEvict(value = {"pets", "breeds", "dates", "species", "names"}, allEntries = true)
     public Pet updatePet(Long id, Pet newPet){
 
-
         var optionalPet = getPetById(id);
         if (optionalPet.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Pet not found");
 
@@ -111,8 +108,6 @@ public class PetService {
         var principal = (AccountUserDetails) authentication.getPrincipal();
         var account = principal.getAccount();
 
-
-
         boolean isAdmin = account.getRole() == Roles.ROLE_ADMIN;
         boolean isOwnerOfThisPet = account.getOwner() != null
                 && existingPet.getOwner().getId().equals(account.getOwner().getId());
@@ -121,7 +116,7 @@ public class PetService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "you can only edit your own pets");
         }
 
-
+        newPet.setOwner(existingPet.getOwner());
         newPet.setId(id);
         petRepository.save(newPet);
         return newPet;

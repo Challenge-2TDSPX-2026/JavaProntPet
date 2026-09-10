@@ -29,8 +29,6 @@ public record PetRequest(
         @NotNull(message = "sex is required")
         Sex sex,
 
-        @NotNull
-        Owner owner
 ) {
         public Pet toEntity(){
                 return Pet.builder()
@@ -40,7 +38,6 @@ public record PetRequest(
                         .birthDate(birthDate)
                         .weight(weight)
                         .sex(sex)
-                        .owner(owner)
                         .build();
         }
 }
