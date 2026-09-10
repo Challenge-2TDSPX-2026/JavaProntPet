@@ -27,7 +27,7 @@ public record PetRequest(
         Double weight,
 
         @NotNull(message = "sex is required")
-        Sex sex,
+        Sex sex
 
 ) {
         public Pet toEntity(){
