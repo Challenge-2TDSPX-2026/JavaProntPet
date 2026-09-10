@@ -11,7 +11,7 @@ public record PetResponse(
         Long id,
         String name,
         String species,
-        String race,
+        String breed,
         LocalDate birthDate,
         Double weight,
         Sex sex,
