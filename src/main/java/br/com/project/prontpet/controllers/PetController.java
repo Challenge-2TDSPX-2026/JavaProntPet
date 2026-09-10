@@ -36,6 +36,17 @@ public class PetController {
         return ResponseEntity.ok(pets);
     }
 
+    @GetMapping("/me")
+    @Operation(
+            tags = "Pet",
+            summary = "Listar meus pets",
+            description = "Retorna uma página apenas com os pets do tutor autenticado."
+    )
+    public ResponseEntity<Page<PetResponse>> getMyPets(@PageableDefault(page = 0, size = 10) Pageable pageable) {
+        Page<PetResponse> pets = petService.getMyPets(pageable).map(PetResponse::fromEntity);
+        return ResponseEntity.ok(pets);
+    }
+
     @GetMapping(params = "species")
     public ResponseEntity<Page<PetResponse>> getPetsBySpecies(Pageable pageable, @RequestParam String species) {
         Page<PetResponse> pets = petService.getBySpecies(species, pageable).map(PetResponse::fromEntity);

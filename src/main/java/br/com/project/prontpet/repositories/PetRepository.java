@@ -15,4 +15,6 @@ public interface PetRepository extends JpaRepository <Pet, Long> {
     Page<Pet> findByBreedContainingIgnoreCase(String race, Pageable pageable);
     Page<Pet> findByBirthDateBetween(LocalDate startDate, LocalDate endDate, Pageable pageable);
     Page<Pet> findByNameContainingIgnoreCase(String name, Pageable pageable);
+    Page<Pet> findByOwnerId(Long ownerId, Pageable pageable);
+
 }

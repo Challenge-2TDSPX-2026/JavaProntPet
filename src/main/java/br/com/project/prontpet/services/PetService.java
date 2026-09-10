@@ -58,6 +58,19 @@ public class PetService {
         return petRepository.findByNameContainingIgnoreCase(name, pageable);
     }
 
+    public Page<Pet> getMyPets(Pageable pageable){
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        var principal = (AccountUserDetails) authentication.getPrincipal();
+        var account = principal.getAccount();
+
+        if (account.getOwner() == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "only a tutor account has pets");
+        }
+
+        return petRepository.findByOwnerId(account.getOwner().getId(), pageable);
+    }
+
+
     @CacheEvict(value = {"pets", "breeds", "dates", "species", "names"}, allEntries = true)
     public Pet addPet(Pet pet){
 
