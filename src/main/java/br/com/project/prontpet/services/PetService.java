@@ -60,6 +60,19 @@ public class PetService {
 
     @CacheEvict(value = {"pets", "breeds", "dates", "species", "names"}, allEntries = true)
     public Pet addPet(Pet pet){
+
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        var principal = (AccountUserDetails) authentication.getPrincipal();
+        var account = principal.getAccount();
+
+        boolean isAdmin = account.getRole() == Roles.ROLE_ADMIN;
+        boolean isOwnerOfThisPet = account.getOwner() != null
+                && pet.getOwner().getId().equals(account.getOwner().getId());
+
+        if (!isAdmin && !isOwnerOfThisPet) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "you can only add pets to your own account");
+        }
+
         return petRepository.save(pet);
     }
 
