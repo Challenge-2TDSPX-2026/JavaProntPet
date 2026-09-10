@@ -2,6 +2,9 @@ package br.com.project.prontpet.dtos;
 
 import br.com.project.prontpet.enums.Roles;
 import br.com.project.prontpet.models.Account;
+import br.com.project.prontpet.models.Clinic;
+import br.com.project.prontpet.models.Owner;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -19,8 +22,10 @@ public record AccountRequest(
         @NotNull(message = "role is required")
         Roles role,
 
-        Long ownerId,
-        Long clinicId
+        @Valid
+        OwnerRequest owner,
+        @Valid
+        ClinicRequest clinic
 
 ) {
     public Account toEntity() {
