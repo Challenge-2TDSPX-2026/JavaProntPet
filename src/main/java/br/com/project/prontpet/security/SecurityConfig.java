@@ -33,22 +33,20 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                    .requestMatchers(
-                            "/auth/register",
-                            "/error",
-                            "/auth/login",
-                            "/v3/api-docs/**",
-                            "/swagger-ui/**",
-                            "/swagger-ui.html",
-                            "/swagger-ui.html/**")
+                        .requestMatchers(
+                                "/auth/register",
+                                "/error",
+                                "/auth/login",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/swagger-ui.html/**")
                         .permitAll()
-                    .requestMatchers(HttpMethod.POST,"/appointment/**")
-                        .hasAnyAuthority("ROLE_VET", "ROLE_ADMIN")
-                    .requestMatchers(HttpMethod.PUT, "/appointment/**")
-                        .hasAnyAuthority("ROLE_VET", "ROLE_ADMIN")
-                    .requestMatchers(HttpMethod.DELETE, "/appointment/**")
-                        .hasAnyAuthority("ROLE_VET", "ROLE_ADMIN")
-                    .anyRequest().authenticated())
+                        .requestMatchers(HttpMethod.PUT, "/appointment/**")
+                        .hasAnyAuthority("ROLE_VET", "ROLE_ADMIN") // sem mudança nesta linha
+                        .requestMatchers(HttpMethod.DELETE, "/appointment/**")
+                        .hasAnyAuthority("ROLE_VET", "ROLE_ADMIN") // sem mudança nesta linha
+                        .anyRequest().authenticated())
                     .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                     .build();
     }

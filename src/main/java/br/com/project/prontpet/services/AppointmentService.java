@@ -1,13 +1,18 @@
 package br.com.project.prontpet.services;
 
 
+import br.com.project.prontpet.dtos.AppointmentCreateRequest; // NOVO import
+import br.com.project.prontpet.dtos.AppointmentRequest; // NOVO import
+import br.com.project.prontpet.enums.Roles; // NOVO import (precisa pra checar isAdmin)
 import br.com.project.prontpet.models.Appointment;
 import br.com.project.prontpet.models.Clinic;
 import br.com.project.prontpet.models.Pet;
 import br.com.project.prontpet.repositories.AppointmentRepository;
 import br.com.project.prontpet.repositories.ClinicRepository;
 import br.com.project.prontpet.repositories.PetRepository;
+import br.com.project.prontpet.security.AccountUserDetails; // NOVO import
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.context.SecurityContextHolder; // NOVO import
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -35,6 +40,7 @@ public class AppointmentService {
         return appointmentRepository.findById(id);
     }
 
+
     public void validateAppointment(Appointment appointment) {
         Clinic clinic = appointment.getClinic();
         LocalTime appointmentTime = appointment.getAppointmentDate().toLocalTime();
@@ -52,37 +58,71 @@ public class AppointmentService {
         }
     }
 
-    public Appointment addAppointment(Appointment appointment) {
-        Clinic clinic = clinicRepository.findById(appointment.getClinic().getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Clinic not found"));
-        appointment.setClinic(clinic);
 
-        Pet pet = petRepository.findById(appointment.getPet().getId())
+    public Appointment addAppointment(AppointmentCreateRequest request) {
+        Clinic clinic = clinicRepository.findById(request.clinicId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Clinic not found"));
+
+        Pet pet = petRepository.findById(request.petId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pet not found"));
-        appointment.setPet(pet);
+
+
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        var principal = (AccountUserDetails) authentication.getPrincipal();
+        var account = principal.getAccount();
+
+        boolean isAdmin = account.getRole() == Roles.ROLE_ADMIN;
+        boolean isOwnerOfThisPet = account.getOwner() != null
+                && pet.getOwner().getId().equals(account.getOwner().getId());
+
+        if (!isAdmin && !isOwnerOfThisPet) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "you can only schedule appointments for your own pets");
+        }
+
+
+        Appointment appointment = Appointment.builder()
+                .clinic(clinic)
+                .pet(pet)
+                .appointmentDate(request.appointmentDate())
+                .build();
+
+
         validateToAddAppointment(appointment);
 
-        pet.setWeight(appointment.getUpdatedWeight());
-        petRepository.save(pet);
+
+
         return appointmentRepository.save(appointment);
     }
 
-    public Appointment updateAppointment(Long id, Appointment newAppointment) {
-        Clinic clinic = clinicRepository.findById(newAppointment.getClinic().getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Clinic not found"));
-        newAppointment.setClinic(clinic);
 
-        Pet pet = petRepository.findById(newAppointment.getPet().getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pet not found"));
-        newAppointment.setPet(pet);
+    public Appointment updateAppointment(Long id, AppointmentRequest request) {
         var optionalAppointment = getAppointmentById(id);
-        if (optionalAppointment.isEmpty())throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Appointment Not Found");
-        validateAppointment(newAppointment);
+        if (optionalAppointment.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Appointment Not Found");
 
-        newAppointment.setId(id);
-        pet.setWeight(newAppointment.getUpdatedWeight());
+        Clinic clinic = clinicRepository.findById(request.clinicId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Clinic not found"));
+
+        Pet pet = petRepository.findById(request.petId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pet not found"));
+
+        Appointment updatedAppointment = Appointment.builder()
+                .id(id)
+                .speciality(request.speciality())
+                .symptoms(request.symptoms())
+                .dignosis(request.dignosis())
+                .observations(request.observations())
+                .clinic(clinic)
+                .pet(pet)
+                .appointmentDate(request.appointmentDate())
+                .updatedWeight(request.updatedWeight())
+                .build();
+
+        validateAppointment(updatedAppointment);
+
+        pet.setWeight(updatedAppointment.getUpdatedWeight());
         petRepository.save(pet);
-        return appointmentRepository.save(newAppointment);
+
+        return appointmentRepository.save(updatedAppointment);
     }
 
     public void deleteAppointment(Long id) {

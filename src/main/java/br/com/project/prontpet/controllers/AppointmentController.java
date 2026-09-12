@@ -1,5 +1,6 @@
 package br.com.project.prontpet.controllers;
 
+import br.com.project.prontpet.dtos.AppointmentCreateRequest; // NOVO import
 import br.com.project.prontpet.dtos.AppointmentRequest;
 import br.com.project.prontpet.dtos.AppointmentResponse;
 import br.com.project.prontpet.dtos.ClinicResponse;
@@ -23,6 +24,7 @@ public class AppointmentController {
         this.appointmentService = appointmentService;
     }
 
+
     @GetMapping
     @Operation(
             tags = "Appointment",
@@ -36,24 +38,27 @@ public class AppointmentController {
     @PostMapping
     @Operation(
             tags = "Appointment",
-            summary = "Cadastrar nova consulta",
-            description = "Recebe os dados da consulta via body, persiste no banco e retorna a entidade criada com status 201."
+            summary = "Agendar nova consulta", // MUDOU: texto do summary
+            description = "Recebe petId, clinicId e appointmentDate via body, agenda a consulta e retorna a entidade criada com status 201." // MUDOU: texto da description
     )
-    public ResponseEntity<AppointmentResponse> addAppointment(@Valid @RequestBody AppointmentRequest appointmentRequest) {
-        Appointment appointment = appointmentService.addAppointment(appointmentRequest.toEntity());
+
+    public ResponseEntity<AppointmentResponse> addAppointment(@Valid @RequestBody AppointmentCreateRequest appointmentRequest) {
+
+        Appointment appointment = appointmentService.addAppointment(appointmentRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(AppointmentResponse.fromEntity(appointment));
     }
 
     @PutMapping("/{id}")
     @Operation(
             tags = "Appointment",
-            summary = "Atualizar consulta",
-            description = "Recebe o ID da consulta e os novos dados via body, atualiza no banco e retorna a entidade atualizada."
+            summary = "Atualizar consulta (pós-atendimento)", // MUDOU: texto do summary
+            description = "Recebe o ID da consulta e os dados clínicos via body (preenchidos após o atendimento), atualiza no banco e retorna a entidade atualizada." // MUDOU: texto
     )
     public ResponseEntity<AppointmentResponse> updateAppointment(@PathVariable Long id, @Valid @RequestBody AppointmentRequest appointmentRequest) {
-        Appointment appointment = appointmentService.updateAppointment(id, appointmentRequest.toEntity());
+        Appointment appointment = appointmentService.updateAppointment(id, appointmentRequest);
         return ResponseEntity.ok(AppointmentResponse.fromEntity(appointment));
     }
+
 
     @DeleteMapping("/{id}")
     @Operation(
