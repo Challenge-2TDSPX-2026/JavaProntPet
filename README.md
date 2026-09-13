@@ -10,7 +10,7 @@
 - GitHub Back-End:  
   https://github.com/Challenge-2TDSPX-2026/JavaProntPet
 
-- GitHub Front-End:
+- GitHub Front-End: 
   https://github.com/Challenge-2TDSPX-2026/MobileProntPet
 
 - Vídeo:
