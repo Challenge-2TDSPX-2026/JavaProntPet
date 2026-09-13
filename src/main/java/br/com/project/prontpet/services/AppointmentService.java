@@ -173,7 +173,11 @@ public class AppointmentService {
 
         Appointment appointment = appointmentRepository.findById(id)
                 .orElseThrow(() ->
-                        new ResponseStatusException(HttpStatus.NOT_FOUND, "Appointment not found"));
+                        new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Appointment not found"
+                        )
+                );
 
         var authentication = SecurityContextHolder
                 .getContext()
@@ -185,23 +189,28 @@ public class AppointmentService {
         boolean isAdmin = account.getRole() == Roles.ROLE_ADMIN;
 
         boolean isOwnerOfPet = account.getOwner() != null
+                && appointment.getPet() != null
+                && appointment.getPet().getOwner() != null
                 && appointment.getPet().getOwner().getId()
                 .equals(account.getOwner().getId());
 
         boolean isVetOfClinic = account.getClinic() != null
+                && appointment.getClinic() != null
                 && appointment.getClinic().getId()
                 .equals(account.getClinic().getId());
 
         if (!isAdmin && !isOwnerOfPet && !isVetOfClinic) {
             throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN,
-                    "you can only cancel your own appointments");
+                    "you can only cancel your own appointments"
+            );
         }
 
         if (appointment.getAppointmentDate().isBefore(LocalDateTime.now())) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "cannot cancel a past appointment");
+                    "cannot cancel a past appointment"
+            );
         }
 
         appointmentRepository.delete(appointment);

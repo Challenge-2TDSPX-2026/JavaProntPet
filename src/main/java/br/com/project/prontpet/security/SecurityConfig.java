@@ -43,9 +43,7 @@ public class SecurityConfig {
                                 "/swagger-ui.html/**")
                         .permitAll()
                         .requestMatchers(HttpMethod.PUT, "/appointment/**")
-                        .hasAnyAuthority("ROLE_VET", "ROLE_ADMIN") // sem mudança nesta linha
-                        .requestMatchers(HttpMethod.DELETE, "/appointment/**")
-                        .hasAnyAuthority("ROLE_VET", "ROLE_ADMIN") // sem mudança nesta linha
+                        .hasAnyAuthority("ROLE_VET", "ROLE_ADMIN")
                         .anyRequest().authenticated())
                     .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                     .build();
