@@ -12,7 +12,7 @@ public record AppointmentResponse(
         Long id,
 
         String symptoms,
-        String dignosis,
+        String diagnosis,
         String observations,
         Clinic clinic,
         Pet pet,
