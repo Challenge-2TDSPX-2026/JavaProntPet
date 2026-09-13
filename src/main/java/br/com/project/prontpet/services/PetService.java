@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -108,7 +109,7 @@ public class PetService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "you can only edit your own pets");
         }
 
-        boolean isAppointmentScheduled = appointmentRepository.hasFutureOrTodayAppointments(existingPet.getId(), LocalDate.now());
+        boolean isAppointmentScheduled = appointmentRepository.hasFutureOrTodayAppointments(existingPet.getId(), LocalDateTime.now());
 
         if (isAppointmentScheduled) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "has a scheduled appointment");

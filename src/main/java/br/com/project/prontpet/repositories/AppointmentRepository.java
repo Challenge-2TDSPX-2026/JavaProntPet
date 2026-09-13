@@ -20,5 +20,5 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 
 
     @Query("SELECT COUNT(a) > 0 FROM Appointment a WHERE a.pet.id = :petId AND a.appointmentDate >= :today")
-    boolean hasFutureOrTodayAppointments(@Param("petId") Long petId, @Param("today") LocalDate today);
+    boolean hasFutureOrTodayAppointments(@Param("petId") Long petId, @Param("today") LocalDateTime today);
 }
