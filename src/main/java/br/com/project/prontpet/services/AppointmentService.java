@@ -1,18 +1,18 @@
 package br.com.project.prontpet.services;
 
 
-import br.com.project.prontpet.dtos.AppointmentCreateRequest; // NOVO import
-import br.com.project.prontpet.dtos.AppointmentRequest; // NOVO import
-import br.com.project.prontpet.enums.Roles; // NOVO import (precisa pra checar isAdmin)
+import br.com.project.prontpet.dtos.AppointmentCreateRequest;
+import br.com.project.prontpet.dtos.AppointmentRequest;
+import br.com.project.prontpet.enums.Roles;
 import br.com.project.prontpet.models.Appointment;
 import br.com.project.prontpet.models.Clinic;
 import br.com.project.prontpet.models.Pet;
 import br.com.project.prontpet.repositories.AppointmentRepository;
 import br.com.project.prontpet.repositories.ClinicRepository;
 import br.com.project.prontpet.repositories.PetRepository;
-import br.com.project.prontpet.security.AccountUserDetails; // NOVO import
+import br.com.project.prontpet.security.AccountUserDetails;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.context.SecurityContextHolder; // NOVO import
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -57,10 +57,28 @@ public class AppointmentService {
         return appointmentRepository.findByPetId(petId);
     }
 
+    public List<Appointment> getAppointmentsByClinic(Long clinicId) {
+        Clinic clinic = clinicRepository.findById(clinicId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Clinic not found"));
+
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        var principal = (AccountUserDetails) authentication.getPrincipal();
+        var account = principal.getAccount();
+
+        boolean isAdmin = account.getRole() == Roles.ROLE_ADMIN;
+        boolean isThisClinic = account.getClinic() != null
+                && account.getClinic().getId().equals(clinicId);
+
+        if (!isAdmin && !isThisClinic) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "you can only see appointments for your own clinic");
+        }
+
+        return appointmentRepository.findByClinicId(clinicId);
+    }
+
     public Optional<Appointment> getAppointmentById(Long id) {
         return appointmentRepository.findById(id);
     }
-
 
     public void validateAppointment(Appointment appointment) {
         Clinic clinic = appointment.getClinic();
@@ -79,14 +97,12 @@ public class AppointmentService {
         }
     }
 
-
     public Appointment addAppointment(AppointmentCreateRequest request) {
         Clinic clinic = clinicRepository.findById(request.clinicId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Clinic not found"));
 
         Pet pet = petRepository.findById(request.petId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pet not found"));
-
 
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         var principal = (AccountUserDetails) authentication.getPrincipal();
@@ -100,21 +116,16 @@ public class AppointmentService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "you can only schedule appointments for your own pets");
         }
 
-
         Appointment appointment = Appointment.builder()
                 .clinic(clinic)
                 .pet(pet)
                 .appointmentDate(request.appointmentDate())
                 .build();
 
-
         validateToAddAppointment(appointment);
-
-
 
         return appointmentRepository.save(appointment);
     }
-
 
     public Appointment updateAppointment(Long id, AppointmentRequest request) {
         var optionalAppointment = getAppointmentById(id);

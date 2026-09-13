@@ -48,6 +48,20 @@ public class AppointmentController {
         return ResponseEntity.ok(appointments);
     }
 
+    @GetMapping(params = "clinicId")
+    @Operation(
+            tags = "Appointment",
+            summary = "Listar consultas de uma clínica",
+            description = "Retorna todas as consultas de uma clínica específica. Restrito à própria clínica (VET vinculado) ou ADMIN."
+    )
+    public ResponseEntity<List<AppointmentResponse>> getAppointmentsByClinic(@RequestParam Long clinicId) {
+        List<AppointmentResponse> appointments = appointmentService.getAppointmentsByClinic(clinicId)
+                .stream()
+                .map(AppointmentResponse::fromEntity)
+                .toList();
+        return ResponseEntity.ok(appointments);
+    }
+
     @PostMapping
     @Operation(
             tags = "Appointment",
