@@ -25,7 +25,7 @@ public record AppointmentResponse(
                 a.getId(),
                 a.getSpeciality(),
                 a.getSymptoms(),
-                a.getDignosis(),
+                a.getDiagnosis(),
                 a.getObservations(),
                 a.getClinic(),
                 a.getPet(),
