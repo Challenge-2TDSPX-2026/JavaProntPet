@@ -11,7 +11,6 @@ public record AppointmentResponse(
 
         Long id,
 
-        String speciality,
         String symptoms,
         String dignosis,
         String observations,
@@ -23,7 +22,6 @@ public record AppointmentResponse(
     public static AppointmentResponse fromEntity(Appointment a) {
         return new AppointmentResponse(
                 a.getId(),
-                a.getSpeciality(),
                 a.getSymptoms(),
                 a.getDiagnosis(),
                 a.getObservations(),

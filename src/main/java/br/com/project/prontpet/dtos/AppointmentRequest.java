@@ -8,8 +8,6 @@ import java.time.LocalDateTime;
 
 public record AppointmentRequest (
 
-        @NotBlank(message = "specialty is required")
-        String speciality,
 
         @NotBlank(message = "symptoms is required")
         String symptoms,

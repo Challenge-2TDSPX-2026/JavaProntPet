@@ -151,7 +151,6 @@ public class AppointmentService {
 
         Appointment updatedAppointment = Appointment.builder()
                 .id(id)
-                .speciality(request.speciality())
                 .symptoms(request.symptoms())
                 .diagnosis(request.diagnosis())
                 .observations(request.observations())
