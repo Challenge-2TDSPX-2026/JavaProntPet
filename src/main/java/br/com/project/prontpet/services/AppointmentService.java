@@ -76,6 +76,18 @@ public class AppointmentService {
         return appointmentRepository.findByClinicId(clinicId);
     }
 
+    public List<Appointment> getMyClinicAppointments() {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        var principal = (AccountUserDetails) authentication.getPrincipal();
+        var account = principal.getAccount();
+
+        if (account.getClinic() == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "only a clinic account has appointments");
+        }
+
+        return appointmentRepository.findByClinicId(account.getClinic().getId());
+    }
+
     public Optional<Appointment> getAppointmentById(Long id) {
         return appointmentRepository.findById(id);
     }

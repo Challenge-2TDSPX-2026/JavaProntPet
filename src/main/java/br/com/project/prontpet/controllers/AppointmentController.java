@@ -48,13 +48,27 @@ public class AppointmentController {
         return ResponseEntity.ok(appointments);
     }
 
-    @GetMapping(params = "clinicId")
+    @GetMapping("/clinic/me")
+    @Operation(
+            tags = "Appointment",
+            summary = "Listar consultas da minha clínica",
+            description = "Retorna todas as consultas da clínica autenticada."
+    )
+    public ResponseEntity<List<AppointmentResponse>> getMyClinicAppointments() {
+        List<AppointmentResponse> appointments = appointmentService.getMyClinicAppointments()
+                .stream()
+                .map(AppointmentResponse::fromEntity)
+                .toList();
+        return ResponseEntity.ok(appointments);
+    }
+
+    @GetMapping("/clinic/{clinicId}")
     @Operation(
             tags = "Appointment",
             summary = "Listar consultas de uma clínica",
             description = "Retorna todas as consultas de uma clínica específica. Restrito à própria clínica (VET vinculado) ou ADMIN."
     )
-    public ResponseEntity<List<AppointmentResponse>> getAppointmentsByClinic(@RequestParam Long clinicId) {
+    public ResponseEntity<List<AppointmentResponse>> getAppointmentsByClinic(@PathVariable Long clinicId) {
         List<AppointmentResponse> appointments = appointmentService.getAppointmentsByClinic(clinicId)
                 .stream()
                 .map(AppointmentResponse::fromEntity)
