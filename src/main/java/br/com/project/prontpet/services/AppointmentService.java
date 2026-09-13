@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
@@ -169,8 +170,40 @@ public class AppointmentService {
     }
 
     public void deleteAppointment(Long id) {
-        var optionalAppointment = getAppointmentById(id);
-        if (optionalAppointment.isEmpty())throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Appointment Not Found");
-        appointmentRepository.deleteById(id);
+
+        Appointment appointment = appointmentRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResponseStatusException(HttpStatus.NOT_FOUND, "Appointment not found"));
+
+        var authentication = SecurityContextHolder
+                .getContext()
+                .getAuthentication();
+
+        var principal = (AccountUserDetails) authentication.getPrincipal();
+        var account = principal.getAccount();
+
+        boolean isAdmin = account.getRole() == Roles.ROLE_ADMIN;
+
+        boolean isOwnerOfPet = account.getOwner() != null
+                && appointment.getPet().getOwner().getId()
+                .equals(account.getOwner().getId());
+
+        boolean isVetOfClinic = account.getClinic() != null
+                && appointment.getClinic().getId()
+                .equals(account.getClinic().getId());
+
+        if (!isAdmin && !isOwnerOfPet && !isVetOfClinic) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "you can only cancel your own appointments");
+        }
+
+        if (appointment.getAppointmentDate().isBefore(LocalDateTime.now())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "cannot cancel a past appointment");
+        }
+
+        appointmentRepository.delete(appointment);
     }
 }
