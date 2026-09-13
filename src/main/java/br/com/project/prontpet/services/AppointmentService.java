@@ -141,7 +141,7 @@ public class AppointmentService {
                 .id(id)
                 .speciality(request.speciality())
                 .symptoms(request.symptoms())
-                .dignosis(request.dignosis())
+                .diagnosis(request.diagnosis())
                 .observations(request.observations())
                 .clinic(clinic)
                 .pet(pet)

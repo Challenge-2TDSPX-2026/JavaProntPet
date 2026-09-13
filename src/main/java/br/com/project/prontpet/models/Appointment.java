@@ -22,7 +22,7 @@ public class Appointment {
 
     private String speciality;
     private String symptoms;
-    private String dignosis;
+    private String diagnosis;
     private String observations;
     private LocalDateTime appointmentDate;
     private Double updatedWeight;

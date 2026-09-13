@@ -14,8 +14,8 @@ public record AppointmentRequest (
         @NotBlank(message = "symptoms is required")
         String symptoms,
 
-        @NotBlank(message = "dignosis is required")
-        String dignosis,
+        @NotBlank(message = "diagnosis is required")
+        String diagnosis,
 
         @NotBlank(message = "observations is required")
         String observations,
