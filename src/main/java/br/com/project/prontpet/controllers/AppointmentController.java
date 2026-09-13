@@ -1,6 +1,6 @@
 package br.com.project.prontpet.controllers;
 
-import br.com.project.prontpet.dtos.AppointmentCreateRequest; // NOVO import
+import br.com.project.prontpet.dtos.AppointmentCreateRequest;
 import br.com.project.prontpet.dtos.AppointmentRequest;
 import br.com.project.prontpet.dtos.AppointmentResponse;
 import br.com.project.prontpet.dtos.ClinicResponse;
@@ -24,7 +24,6 @@ public class AppointmentController {
         this.appointmentService = appointmentService;
     }
 
-
     @GetMapping
     @Operation(
             tags = "Appointment",
@@ -35,15 +34,27 @@ public class AppointmentController {
         return ResponseEntity.ok(appointmentService.getAllAppointments());
     }
 
+    @GetMapping(params = "petId")
+    @Operation(
+            tags = "Appointment",
+            summary = "Listar consultas de um pet",
+            description = "Retorna todas as consultas de um pet específico. Restrito ao dono do pet, VET ou ADMIN."
+    )
+    public ResponseEntity<List<AppointmentResponse>> getAppointmentsByPet(@RequestParam Long petId) {
+        List<AppointmentResponse> appointments = appointmentService.getAppointmentsByPet(petId)
+                .stream()
+                .map(AppointmentResponse::fromEntity)
+                .toList();
+        return ResponseEntity.ok(appointments);
+    }
+
     @PostMapping
     @Operation(
             tags = "Appointment",
-            summary = "Agendar nova consulta", // MUDOU: texto do summary
-            description = "Recebe petId, clinicId e appointmentDate via body, agenda a consulta e retorna a entidade criada com status 201." // MUDOU: texto da description
+            summary = "Agendar nova consulta",
+            description = "Recebe petId, clinicId e appointmentDate via body, agenda a consulta e retorna a entidade criada com status 201."
     )
-
     public ResponseEntity<AppointmentResponse> addAppointment(@Valid @RequestBody AppointmentCreateRequest appointmentRequest) {
-
         Appointment appointment = appointmentService.addAppointment(appointmentRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(AppointmentResponse.fromEntity(appointment));
     }
@@ -51,14 +62,13 @@ public class AppointmentController {
     @PutMapping("/{id}")
     @Operation(
             tags = "Appointment",
-            summary = "Atualizar consulta (pós-atendimento)", // MUDOU: texto do summary
-            description = "Recebe o ID da consulta e os dados clínicos via body (preenchidos após o atendimento), atualiza no banco e retorna a entidade atualizada." // MUDOU: texto
+            summary = "Atualizar consulta (pós-atendimento)",
+            description = "Recebe o ID da consulta e os dados clínicos via body (preenchidos após o atendimento), atualiza no banco e retorna a entidade atualizada."
     )
     public ResponseEntity<AppointmentResponse> updateAppointment(@PathVariable Long id, @Valid @RequestBody AppointmentRequest appointmentRequest) {
         Appointment appointment = appointmentService.updateAppointment(id, appointmentRequest);
         return ResponseEntity.ok(AppointmentResponse.fromEntity(appointment));
     }
-
 
     @DeleteMapping("/{id}")
     @Operation(

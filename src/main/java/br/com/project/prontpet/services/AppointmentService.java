@@ -36,6 +36,27 @@ public class AppointmentService {
     public List<Appointment> getAllAppointments() {
         return appointmentRepository.findAll();
     }
+
+    public List<Appointment> getAppointmentsByPet(Long petId) {
+        Pet pet = petRepository.findById(petId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pet not found"));
+
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        var principal = (AccountUserDetails) authentication.getPrincipal();
+        var account = principal.getAccount();
+
+        boolean isAdmin = account.getRole() == Roles.ROLE_ADMIN;
+        boolean isVet = account.getRole() == Roles.ROLE_VET;
+        boolean isOwnerOfThisPet = account.getOwner() != null
+                && pet.getOwner().getId().equals(account.getOwner().getId());
+
+        if (!isAdmin && !isVet && !isOwnerOfThisPet) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "you can only see appointments for your own pets");
+        }
+
+        return appointmentRepository.findByPetId(petId);
+    }
+
     public Optional<Appointment> getAppointmentById(Long id) {
         return appointmentRepository.findById(id);
     }
