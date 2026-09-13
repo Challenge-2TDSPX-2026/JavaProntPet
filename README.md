@@ -7,13 +7,16 @@
 
 ## Repositório
 
-- GitHub Back-End:  
+- GitHub Back-End:
+  
   https://github.com/Challenge-2TDSPX-2026/JavaProntPet
 
-- GitHub Front-End: 
+- GitHub Front-End:
+ 
   https://github.com/Challenge-2TDSPX-2026/MobileProntPet
 
 - Vídeo:
+  
   https://youtu.be/y2-7rWh3wTE
 
 # ProntPet
