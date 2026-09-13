@@ -3,6 +3,7 @@ package br.com.project.prontpet.services;
 import br.com.project.prontpet.enums.Roles;
 import br.com.project.prontpet.models.Owner;
 import br.com.project.prontpet.models.Pet;
+import br.com.project.prontpet.repositories.AppointmentRepository;
 import br.com.project.prontpet.repositories.PetRepository;
 import br.com.project.prontpet.security.AccountUserDetails;
 import org.springframework.cache.annotation.CacheEvict;
@@ -20,9 +21,11 @@ import java.util.Optional;
 @Service
 public class PetService {
 
+    private final AppointmentRepository appointmentRepository;
     private final PetRepository petRepository;
 
-    public PetService(PetRepository petRepository) {
+    public PetService(AppointmentRepository appointmentRepository, PetRepository petRepository) {
+        this.appointmentRepository = appointmentRepository;
         this.petRepository = petRepository;
     }
 
@@ -93,12 +96,9 @@ public class PetService {
         if (optionalPet.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Pet not found");
 
         Pet existingPet = optionalPet.get();
-
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         var principal = (AccountUserDetails) authentication.getPrincipal();
         var account = principal.getAccount();
-
-
 
         boolean isAdmin = account.getRole() == Roles.ROLE_ADMIN;
         boolean isOwnerOfThisPet = account.getOwner() != null
@@ -107,6 +107,13 @@ public class PetService {
         if (!isAdmin && !isOwnerOfThisPet) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "you can only edit your own pets");
         }
+
+        boolean isAppointmentScheduled = appointmentRepository.hasFutureOrTodayAppointments(existingPet.getId(), LocalDate.now());
+
+        if (isAppointmentScheduled) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "has a scheduled appointment");
+        }
+
         petRepository.deleteById(id);}
 
     @CacheEvict(value = {"pets", "breeds", "dates", "species", "names"}, allEntries = true)
