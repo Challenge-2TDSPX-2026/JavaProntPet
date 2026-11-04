@@ -1,15 +1,15 @@
 package br.com.project.prontpet.dtos;
 
+import br.com.project.prontpet.enums.Sex;
 import br.com.project.prontpet.models.Appointment;
 import br.com.project.prontpet.models.Clinic;
 import br.com.project.prontpet.models.Pet;
+import org.hibernate.validator.constraints.br.CPF;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-/**
- * Resposta da consulta com resumos de pet e clinica.
- * Nao expoe a entidade Pet/Owner (CPF, e-mail e telefone do tutor ficam de fora).
- */
+
 public record AppointmentResponse(
         Long id,
         String symptoms,
@@ -27,11 +27,21 @@ public record AppointmentResponse(
         }
     }
 
-    public record PetSummary(Long id, String name, String species, String breed, String ownerName) {
+    public record PetSummary(
+            Long id,
+            String name,
+            String species,
+            String breed,
+            LocalDate birthDate,
+            Double weight,
+            Sex sex,
+            Long ownerId
+    ) {
         static PetSummary from(Pet p) {
             if (p == null) return null;
-            String ownerName = p.getOwner() != null ? p.getOwner().getName() : null;
-            return new PetSummary(p.getId(), p.getName(), p.getSpecies(), p.getBreed(), ownerName);
+            Long ownerId = p.getOwner() != null ? p.getOwner().getId() : null;
+            return new PetSummary(p.getId(), p.getName(), p.getSpecies(), p.getBreed(),
+                    p.getBirthDate(), p.getWeight(), p.getSex(), ownerId);
         }
     }
 
