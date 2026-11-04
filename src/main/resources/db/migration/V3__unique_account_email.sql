@@ -1,0 +1,1 @@
+ALTER TABLE TB_ACCOUNT ADD CONSTRAINT uq_account_email UNIQUE (email);

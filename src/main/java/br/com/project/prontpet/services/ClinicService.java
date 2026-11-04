@@ -1,74 +1,60 @@
 package br.com.project.prontpet.services;
 
-import br.com.project.prontpet.dtos.ClinicRequest;
-import br.com.project.prontpet.dtos.ClinicResponse;
-import br.com.project.prontpet.enums.Roles;
 import br.com.project.prontpet.models.Clinic;
+import br.com.project.prontpet.repositories.AccountRepository;
 import br.com.project.prontpet.repositories.ClinicRepository;
-import br.com.project.prontpet.security.AccountUserDetails;
+import br.com.project.prontpet.security.CurrentUser;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class ClinicService {
 
-    private final ClinicRepository clinicRepository;
+    private static final String OWN_CLINIC_ONLY = "you can only manage your own clinic";
 
-    public ClinicService(ClinicRepository clinicRepository) {
+    private final ClinicRepository clinicRepository;
+    private final AccountRepository accountRepository;
+    private final CurrentUser currentUser;
+
+    public ClinicService(ClinicRepository clinicRepository, AccountRepository accountRepository, CurrentUser currentUser) {
         this.clinicRepository = clinicRepository;
+        this.accountRepository = accountRepository;
+        this.currentUser = currentUser;
     }
 
     public List<Clinic> getClinics() {
         return clinicRepository.findAll();
     }
 
-    public Optional<Clinic> getClinicById(Long id) {
-        return clinicRepository.findById(id);
-    }
-
+    /** Somente ADMIN (garantido por @PreAuthorize no controller). */
     public Clinic addClinic(Clinic clinic) {
+        if (clinicRepository.existsByCnpj(clinic.getCnpj())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "cnpj already registered");
+        }
         return clinicRepository.save(clinic);
     }
 
     public Clinic updateClinic(Long id, Clinic newClinic) {
-
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        var principal = (AccountUserDetails) authentication.getPrincipal();
-        var account = principal.getAccount();
-
-        boolean isAdmin = account.getRole() == Roles.ROLE_ADMIN;
-        boolean isSameClinic = account.getClinic() != null && account.getClinic().getId().equals(id);
-
-        if (!isAdmin && !isSameClinic) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "you can only edit your own clinic");
-        }
-        var optionalClinic = getClinicById(id);
-        if(optionalClinic.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Clinic not found");
+        currentUser.requireClinicAccess(id, OWN_CLINIC_ONLY);
+        findOrThrow(id);
         newClinic.setId(id);
-        clinicRepository.save(newClinic);
-        return newClinic;
+        return clinicRepository.save(newClinic);
     }
 
+    @Transactional
     public void deleteClinic(Long id) {
-
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        var principal = (AccountUserDetails) authentication.getPrincipal();
-        var account = principal.getAccount();
-
-        boolean isAdmin = account.getRole() == Roles.ROLE_ADMIN;
-        boolean isSameClinic = account.getClinic() != null && account.getClinic().getId().equals(id);
-
-        if (!isAdmin && !isSameClinic) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "you can only edit your own clinic");
-        }
-
-        var optionalClinic = getClinicById(id);
-        if(optionalClinic.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Clinic not found");
+        currentUser.requireClinicAccess(id, OWN_CLINIC_ONLY);
+        findOrThrow(id);
+        accountRepository.deleteByClinicId(id);
         clinicRepository.deleteById(id);
+    }
+
+    private Clinic findOrThrow(Long id) {
+        return clinicRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "clinic not found"));
     }
 }

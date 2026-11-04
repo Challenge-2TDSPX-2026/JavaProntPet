@@ -1,145 +1,135 @@
 package br.com.project.prontpet.services;
 
-import br.com.project.prontpet.enums.Roles;
-import br.com.project.prontpet.models.Owner;
+import br.com.project.prontpet.config.EvictPetCaches;
 import br.com.project.prontpet.models.Pet;
 import br.com.project.prontpet.repositories.AppointmentRepository;
 import br.com.project.prontpet.repositories.PetRepository;
-import br.com.project.prontpet.security.AccountUserDetails;
-import org.springframework.cache.annotation.CacheEvict;
+import br.com.project.prontpet.security.CurrentUser;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 @Service
 public class PetService {
 
+    private static final String OWN_PETS_ONLY = "you can only manage your own pets";
+
     private final AppointmentRepository appointmentRepository;
     private final PetRepository petRepository;
+    private final CurrentUser currentUser;
 
-    public PetService(AppointmentRepository appointmentRepository, PetRepository petRepository) {
+    public PetService(AppointmentRepository appointmentRepository, PetRepository petRepository, CurrentUser currentUser) {
         this.appointmentRepository = appointmentRepository;
         this.petRepository = petRepository;
+        this.currentUser = currentUser;
     }
 
+    // --- Listagens globais: somente ADMIN (@PreAuthorize no controller) ---------
+
     @Cacheable(value = "pets")
-    public Page<Pet> getPets(Pageable pageable){
+    public Page<Pet> getPets(Pageable pageable) {
         return petRepository.findAll(pageable);
     }
 
-    public Optional<Pet> getPetById(Long id){
-        return petRepository.findById(id);
-    }
-
-    //Filtro por Raça
     @Cacheable(value = "breeds")
-    public Page<Pet> getByBreed(String breed, Pageable pageable){
+    public Page<Pet> getByBreed(String breed, Pageable pageable) {
         return petRepository.findByBreedContainingIgnoreCase(breed, pageable);
     }
 
-    //Filtro por idade
     @Cacheable(value = "dates")
-    public Page<Pet> getByDateBetween(LocalDate startDate, LocalDate endDate, Pageable pageable){
-        return  petRepository.findByBirthDateBetween(startDate, endDate, pageable);
+    public Page<Pet> getByDateBetween(LocalDate startDate, LocalDate endDate, Pageable pageable) {
+        return petRepository.findByBirthDateBetween(startDate, endDate, pageable);
     }
 
-    //Filtro por Species
     @Cacheable(value = "species")
-    public Page<Pet> getBySpecies(String species, Pageable pageable){
+    public Page<Pet> getBySpecies(String species, Pageable pageable) {
         return petRepository.findBySpeciesContainingIgnoreCase(species, pageable);
     }
 
     @Cacheable(value = "names")
-    public Page<Pet> getByName(String name, Pageable pageable){
+    public Page<Pet> getByName(String name, Pageable pageable) {
         return petRepository.findByNameContainingIgnoreCase(name, pageable);
     }
 
-    public Page<Pet> getMyPets(Pageable pageable){
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        var principal = (AccountUserDetails) authentication.getPrincipal();
-        var account = principal.getAccount();
+    // --- Pets do tutor logado ----------------------------------------------------
 
-        if (account.getOwner() == null) {
+    public Page<Pet> getMyPets(Pageable pageable) {
+        Long ownerId = currentUser.ownerId();
+        if (ownerId == null) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "only a tutor account has pets");
         }
-
-        return petRepository.findByOwnerId(account.getOwner().getId(), pageable);
+        return petRepository.findByOwnerId(ownerId, pageable);
     }
 
+    /**
+     * Quem pode ver um pet: ADMIN, o tutor dono, ou VET de uma clinica
+     * que tenha consulta com esse pet.
+     */
+    public Pet getPetById(Long id) {
+        Pet pet = findOrThrow(id);
 
-    @CacheEvict(value = {"pets", "breeds", "dates", "species", "names"}, allEntries = true)
-    public Pet addPet(Pet pet){
+        boolean allowed = currentUser.isAdmin()
+                || isOwnedByCurrentUser(pet)
+                || (currentUser.isVet() && currentUser.clinicId() != null
+                    && appointmentRepository.existsByPetIdAndClinicId(pet.getId(), currentUser.clinicId()));
 
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        var principal = (AccountUserDetails) authentication.getPrincipal();
-        var account = principal.getAccount();
+        if (!allowed) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "you cannot access this pet");
+        }
+        return pet;
+    }
 
-        if (account.getOwner() == null) {
+    @EvictPetCaches
+    public Pet addPet(Pet pet) {
+        var owner = currentUser.account().getOwner();
+        if (owner == null) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "only a tutor account can register a pet");
         }
-
-        pet.setOwner(account.getOwner());
-
+        pet.setOwner(owner);
         return petRepository.save(pet);
     }
 
-    @CacheEvict(value = {"pets", "breeds", "dates", "species", "names"}, allEntries = true)
-    public void deletePet (Long id) {
-        var optionalPet = getPetById(id);
-        if (optionalPet.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Pet not found");
+    @EvictPetCaches
+    public Pet updatePet(Long id, Pet newPet) {
+        Pet existingPet = findOwnedPetOrThrow(id);
+        newPet.setId(id);
+        newPet.setOwner(existingPet.getOwner());
+        return petRepository.save(newPet);
+    }
 
-        Pet existingPet = optionalPet.get();
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        var principal = (AccountUserDetails) authentication.getPrincipal();
-        var account = principal.getAccount();
+    @EvictPetCaches
+    public void deletePet(Long id) {
+        Pet existingPet = findOwnedPetOrThrow(id);
 
-        boolean isAdmin = account.getRole() == Roles.ROLE_ADMIN;
-        boolean isOwnerOfThisPet = account.getOwner() != null
-                && existingPet.getOwner().getId().equals(account.getOwner().getId());
-
-        if (!isAdmin && !isOwnerOfThisPet) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "you can only edit your own pets");
-        }
-
-        boolean isAppointmentScheduled = appointmentRepository.hasFutureOrTodayAppointments(existingPet.getId(), LocalDateTime.now());
-
-        if (isAppointmentScheduled) {
+        if (appointmentRepository.hasFutureOrTodayAppointments(existingPet.getId(), LocalDateTime.now())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "has a scheduled appointment");
         }
+        petRepository.deleteById(id);
+    }
 
-        petRepository.deleteById(id);}
+    // --- helpers -----------------------------------------------------------------
 
-    @CacheEvict(value = {"pets", "breeds", "dates", "species", "names"}, allEntries = true)
-    public Pet updatePet(Long id, Pet newPet){
+    private Pet findOrThrow(Long id) {
+        return petRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pet not found"));
+    }
 
-        var optionalPet = getPetById(id);
-        if (optionalPet.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Pet not found");
+    private boolean isOwnedByCurrentUser(Pet pet) {
+        return pet.getOwner() != null && currentUser.isOwner(pet.getOwner().getId());
+    }
 
-        Pet existingPet = optionalPet.get();
-
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        var principal = (AccountUserDetails) authentication.getPrincipal();
-        var account = principal.getAccount();
-
-        boolean isAdmin = account.getRole() == Roles.ROLE_ADMIN;
-        boolean isOwnerOfThisPet = account.getOwner() != null
-                && existingPet.getOwner().getId().equals(account.getOwner().getId());
-
-        if (!isAdmin && !isOwnerOfThisPet) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "you can only edit your own pets");
+    /** Busca o pet e exige que o usuario seja ADMIN ou o dono dele. */
+    private Pet findOwnedPetOrThrow(Long id) {
+        Pet pet = findOrThrow(id);
+        if (!currentUser.isAdmin() && !isOwnedByCurrentUser(pet)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, OWN_PETS_ONLY);
         }
-
-        newPet.setOwner(existingPet.getOwner());
-        newPet.setId(id);
-        petRepository.save(newPet);
-        return newPet;
+        return pet;
     }
 }
