@@ -1,13 +1,15 @@
 package br.com.project.prontpet.dtos;
 
-import jakarta.validation.constraints.FutureOrPresent;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-import java.time.LocalDateTime;
-
-public record AppointmentRequest (
-
+/**
+ * Dados clinicos preenchidos pela clinica apos o atendimento.
+ * Pet, clinica e data NAO podem ser alterados aqui (antes o body aceitava
+ * clinicId/petId e permitia mover a consulta para outra clinica).
+ */
+public record AppointmentRequest(
 
         @NotBlank(message = "symptoms is required")
         String symptoms,
@@ -18,18 +20,8 @@ public record AppointmentRequest (
         @NotBlank(message = "observations is required")
         String observations,
 
-        @NotNull(message = "clinicId is required")
-        Long clinicId,
-
-        @NotNull(message = "petId is required")
-        Long petId,
-
-        @NotNull(message = "appointmentDate is required")
-        @FutureOrPresent(message = "appointmentDate might not be in the past")
-        LocalDateTime appointmentDate,
-
-        @NotNull(message =  "updatedWeight is required")
+        @NotNull(message = "updatedWeight is required")
+        @DecimalMin(value = "0.5", message = "the weight must be at least 0.5")
         Double updatedWeight
-){
-
+) {
 }

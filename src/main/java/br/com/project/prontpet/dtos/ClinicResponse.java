@@ -5,10 +5,9 @@ import br.com.project.prontpet.models.Clinic;
 import java.time.LocalTime;
 
 public record ClinicResponse(
-
         Long id,
         String name,
-        String CNPJ,
+        String cnpj,
         String address,
         String phone,
         LocalTime openingHours,
@@ -24,7 +23,6 @@ public record ClinicResponse(
                 c.getPhone(),
                 c.getOpeningHours(),
                 c.getClosingHours()
-
         );
     }
 }

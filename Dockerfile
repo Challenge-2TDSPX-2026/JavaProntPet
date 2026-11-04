@@ -4,13 +4,19 @@ WORKDIR /app
 COPY pom.xml .
 COPY src ./src
 
-RUN mvn clean package -DskipTests
+RUN mvn -B clean package -DskipTests
 
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
+# o container nao roda como root
+RUN addgroup -S app && adduser -S app -G app
+
 COPY --from=build /app/target/*.jar app.jar
+USER app
 
 EXPOSE 8080
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=75"
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# a porta vem da variavel PORT (padrao 8080) via application.properties
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar app.jar"]

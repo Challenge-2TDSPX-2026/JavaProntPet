@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -25,69 +26,74 @@ public class PetController {
         this.petService = petService;
     }
 
+    // --- Listagens globais (ADMIN). Tutor usa /pets/me; VET ve pets via consultas da clinica. ---
+
     @GetMapping
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @Operation(
             tags = "Pet",
-            summary = "Listar todos os pets",
-            description = "Retorna uma página com todos os pets cadastrados. É possível filtrar por: 'species', 'breed', 'name' ou intervalo de datas com 'startDate' e 'endDate'. Tamanho padrão de 10 por página."
+            summary = "Listar todos os pets (ADMIN)",
+            description = "Retorna uma pagina com todos os pets. Filtros por 'species', 'breed', 'name' ou 'startDate'+'endDate'. Padrao: 10 por pagina."
     )
     public ResponseEntity<Page<PetResponse>> getPets(@PageableDefault(page = 0, size = 10) Pageable pageable) {
-        Page<PetResponse> pets = petService.getPets(pageable).map(PetResponse::fromEntity);
-        return ResponseEntity.ok(pets);
+        return page(petService.getPets(pageable));
     }
+
+    @GetMapping(params = "species")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public ResponseEntity<Page<PetResponse>> getPetsBySpecies(
+            @PageableDefault(size = 10) Pageable pageable, @RequestParam String species) {
+        return page(petService.getBySpecies(species, pageable));
+    }
+
+    @GetMapping(params = "breed")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public ResponseEntity<Page<PetResponse>> getPetsByBreed(
+            @PageableDefault(size = 10) Pageable pageable, @RequestParam String breed) {
+        return page(petService.getByBreed(breed, pageable));
+    }
+
+    @GetMapping(params = {"startDate", "endDate"})
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public ResponseEntity<Page<PetResponse>> getPetsByBirthDate(
+            @PageableDefault(size = 10) Pageable pageable, @RequestParam LocalDate startDate, @RequestParam LocalDate endDate) {
+        return page(petService.getByDateBetween(startDate, endDate, pageable));
+    }
+
+    @GetMapping(params = "name")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public ResponseEntity<Page<PetResponse>> getPetsByName(
+            @PageableDefault(size = 10) Pageable pageable, @RequestParam String name) {
+        return page(petService.getByName(name, pageable));
+    }
+
+    // --- Tutor ---------------------------------------------------------------------
 
     @GetMapping("/me")
     @Operation(
             tags = "Pet",
             summary = "Listar meus pets",
-            description = "Retorna uma página apenas com os pets do tutor autenticado."
+            description = "Retorna uma pagina apenas com os pets do tutor autenticado."
     )
     public ResponseEntity<Page<PetResponse>> getMyPets(@PageableDefault(page = 0, size = 10) Pageable pageable) {
-        Page<PetResponse> pets = petService.getMyPets(pageable).map(PetResponse::fromEntity);
-        return ResponseEntity.ok(pets);
-    }
-
-    @GetMapping(params = "species")
-    public ResponseEntity<Page<PetResponse>> getPetsBySpecies(Pageable pageable, @RequestParam String species) {
-        Page<PetResponse> pets = petService.getBySpecies(species, pageable).map(PetResponse::fromEntity);
-        return ResponseEntity.ok(pets);
-    }
-
-    @GetMapping(params = "breed")
-    public ResponseEntity<Page<PetResponse>> getPetsByBreeds(Pageable pageable, @RequestParam String breed) {
-        Page<PetResponse> pets = petService.getByBreed(breed, pageable).map(PetResponse::fromEntity);
-        return ResponseEntity.ok(pets);
-    }
-
-    @GetMapping(params = {"startDate", "endDate"})
-    public ResponseEntity<Page<PetResponse>> getPetsByOwners(Pageable pageable, @RequestParam LocalDate startDate, @RequestParam LocalDate endDate) {
-        Page<PetResponse> pets = petService.getByDateBetween(startDate, endDate, pageable).map(PetResponse::fromEntity);
-        return ResponseEntity.ok(pets);
-    }
-
-    @GetMapping(params = "name")
-    public ResponseEntity<Page<PetResponse>> getPetsByName(Pageable pageable, @RequestParam String name) {
-        Page<PetResponse> pets = petService.getByName(name, pageable).map(PetResponse::fromEntity);
-        return ResponseEntity.ok(pets);
+        return page(petService.getMyPets(pageable));
     }
 
     @GetMapping("/{id}")
     @Operation(
             tags = "Pet",
             summary = "Buscar pet por ID",
-            description = "Retorna os dados de um pet específico pelo seu ID. Retorna 404 caso não encontrado."
+            description = "Restrito ao tutor dono, ADMIN ou VET de clinica que tenha consulta com o pet. 404 se nao existir."
     )
     public ResponseEntity<PetResponse> getPetById(@PathVariable Long id) {
-        return petService.getPetById(id)
-                .map((p) -> ResponseEntity.ok(PetResponse.fromEntity(p)))
-                .orElse(ResponseEntity.notFound().build());
+        return ResponseEntity.ok(PetResponse.fromEntity(petService.getPetById(id)));
     }
 
     @PostMapping
     @Operation(
             tags = "Pet",
             summary = "Cadastrar novo pet",
-            description = "Recebe os dados de um pet via body, persiste no banco e retorna a entidade criada com status 201."
+            description = "Cadastra um pet para o tutor autenticado e retorna 201."
     )
     public ResponseEntity<PetResponse> addPet(@Valid @RequestBody PetRequest petRequest) {
         Pet pet = petService.addPet(petRequest.toEntity());
@@ -98,7 +104,7 @@ public class PetController {
     @Operation(
             tags = "Pet",
             summary = "Atualizar pet",
-            description = "Recebe o ID do pet e os novos dados via body, atualiza no banco e retorna a entidade atualizada."
+            description = "Atualiza o pet. Restrito ao tutor dono ou ADMIN."
     )
     public ResponseEntity<PetResponse> updatePet(@PathVariable Long id, @Valid @RequestBody PetRequest petRequest) {
         Pet pet = petService.updatePet(id, petRequest.toEntity());
@@ -109,10 +115,14 @@ public class PetController {
     @Operation(
             tags = "Pet",
             summary = "Deletar pet",
-            description = "Remove o pet com o ID informado do banco de dados. Retorna 204 sem conteúdo."
+            description = "Remove o pet. Restrito ao tutor dono ou ADMIN. 409 se houver consulta agendada."
     )
     public ResponseEntity<Void> deletePet(@PathVariable Long id) {
         petService.deletePet(id);
         return ResponseEntity.noContent().build();
+    }
+
+    private ResponseEntity<Page<PetResponse>> page(Page<Pet> pets) {
+        return ResponseEntity.ok(pets.map(PetResponse::fromEntity));
     }
 }
