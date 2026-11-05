@@ -12,9 +12,8 @@ App de gestão veterinária: **tutores** cadastram seus pets e agendam consultas
 
 | Item | Link |
 |---|---|
-| Aplicação online (API + Swagger) | `<PREENCHER: https://.../swagger-ui.html>` |
-| Front-end online | `<PREENCHER: link do front web ou do Expo>` |
-| Vídeo de apresentação (até 15 min) | `<PREENCHER: link do YouTube não listado>` |
+| Aplicação online (API + Swagger) | https://javaprontpet.onrender.com/swagger-ui.html |
+| Vídeo de apresentação (até 15 min) | https://youtu.be/y2-7rWh3wTE |
 | Repositório Back-End | https://github.com/Challenge-2TDSPX-2026/JavaProntPet |
 | Repositório Front-End | https://github.com/Challenge-2TDSPX-2026/MobileProntPet |
 
